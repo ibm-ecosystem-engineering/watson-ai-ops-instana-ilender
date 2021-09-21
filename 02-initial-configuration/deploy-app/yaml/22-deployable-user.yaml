@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vlender-user
+  namespace: vlender-ns
+  labels:
+    app: vlender-application
+    subname: user
+spec:
+  selector:
+    matchLabels:
+      app: vlender-application
+      subname: user
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: vlender-application
+        subname: user
+    spec:
+      containers:
+        - name: container-user
+          image: "gandigit/ilender-user-demo:0.0.1"
+          imagePullPolicy: Always
+          ports:
+            - name: my-http
+              containerPort: 9076
+              protocol: TCP
+            - name: https
+              containerPort: 8082
+          # resources:
+          #   requests:
+          #     memory: "500Mi"
+          #     cpu: "250m"
+          #   limits:
+          #     memory: "1024Mi"
+          #     cpu: "500m"
+          # livenessProbe:
+          #   httpGet:
+          #     path: /user
+          #     port: my-http
+          #   initialDelaySeconds: 60
+          # failureThreshold: 60
+          # readinessProbe:
+          #   httpGet:
+          #     path: /user
+          #     port: my-http
+          #   initialDelaySeconds: 60
+          env:
+            - name: MY_NAMESPACE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: MY_CONTAINER_NAME
+              value: container-user
+            - name: MY_CONTAINER_IMAGE
+              value: "gandigit/ilender-user-demo:0.0.1"
+            - name: MY_LABELS_APP
+              value: userservice
+            - name: MY_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: MY_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: MY_POD_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.uid
+            - name: skipExternalLog
+              value: "TRUE"                  
+          envFrom:
+            - configMapRef:
+                name: vlender-configmap-urls
+            - configMapRef:
+                name: vlender-configmap-db
+            - configMapRef:
+                name: vlender-configmap-mq
+            - configMapRef:
+                name: vlender-configmap-eventstream
+            - configMapRef:
+                name: vlender-configmap-common
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vlender-user
+  namespace: vlender-ns
+  labels:
+    app: vlender-application
+    subname: user
+spec:
+  type: LoadBalancer
+  ports:
+    - name: my-http
+      port: 9090
+      targetPort: my-http
+  selector:
+    app: vlender-application
+    subname: user
+
